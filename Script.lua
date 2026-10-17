@@ -18,6 +18,7 @@ local S = {
 	Fly = false, FlySpeed = 60,
 	Noclip = false,
 	Fullbright = false,
+	CollectESP = false,
 }
 
 -- connection helper ----------------------------------------------------
@@ -626,6 +627,145 @@ end
 bind(Players.PlayerAdded, function() task.wait(0.2) for _, r in ipairs(tables) do r() end end)
 bind(Players.PlayerRemoving, function() task.wait(0.2) for _, r in ipairs(tables) do r() end end)
 
+-- Collectible ESP -------------------------------------------------------
+local CE = {
+	running = false, count = 0, scanId = 0, acc = 0, tags = {}, conns = {},
+	keys = {
+		"pumpkin", "candy", "coin", "orb", "gem", "egg", "collect", "pickup", "token",
+		"crystal", "treasure", "loot", "present", "gift", "fruit", "berry", "mushroom", "shard",
+	},
+	verbs = { "collect", "pick", "grab", "take", "loot" },
+}
+
+local function ceMatch(str, list)
+	str = str:lower()
+	for _, k in ipairs(list) do
+		if str:find(k, 1, true) then return true end
+	end
+	return false
+end
+
+local function ceIsCharacter(inst)
+	local m = inst
+	while m and m ~= workspace do
+		if m:IsA("Model") and m:FindFirstChildOfClass("Humanoid") then return true end
+		m = m.Parent
+	end
+	return false
+end
+
+local function ceTarget(inst)
+	if inst:IsA("ProximityPrompt") then
+		local par = inst.Parent
+		if par and (par:IsA("BasePart") or par:IsA("Model"))
+			and (ceMatch(inst.ActionText, CE.verbs) or ceMatch(inst.ObjectText, CE.keys)) then
+			return par
+		end
+		return nil
+	end
+	if (inst:IsA("BasePart") or inst:IsA("Model")) and ceMatch(inst.Name, CE.keys) then
+		return inst
+	end
+	return nil
+end
+
+local function ceRemove(inst)
+	local e = CE.tags[inst]
+	if e then
+		e.gui:Destroy()
+		CE.tags[inst] = nil
+		CE.count -= 1
+	end
+end
+
+local function ceAdd(inst)
+	if CE.tags[inst] or CE.count >= 300 or ceIsCharacter(inst) then return end
+	local a = inst.Parent
+	while a and a ~= workspace do
+		if CE.tags[a] then return end
+		a = a.Parent
+	end
+	local adornee = inst:IsA("BasePart") and inst or (inst.PrimaryPart or inst:FindFirstChildWhichIsA("BasePart", true))
+	if not adornee then return end
+	for t in pairs(CE.tags) do
+		if t:IsDescendantOf(inst) then ceRemove(t) end
+	end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "CollectESP"
+	bb.AlwaysOnTop = true
+	bb.Size = UDim2.fromOffset(120, 36)
+	bb.StudsOffset = Vector3.new(0, 2, 0)
+	bb.Adornee = adornee
+	bb.Parent = gui
+	local lbl = Instance.new("TextLabel")
+	lbl.BackgroundTransparency = 1
+	lbl.Size = UDim2.fromScale(1, 1)
+	lbl.Text = inst.Name
+	lbl.TextColor3 = Color3.fromRGB(255, 170, 60)
+	lbl.TextStrokeTransparency = 0.3
+	lbl.Font = Enum.Font.GothamBold
+	lbl.TextSize = 12
+	lbl.Parent = bb
+	CE.tags[inst] = { gui = bb, adornee = adornee, label = lbl }
+	CE.count += 1
+end
+
+local function ceStop()
+	CE.running = false
+	CE.scanId += 1
+	for _, c in ipairs(CE.conns) do pcall(function() c:Disconnect() end) end
+	CE.conns = {}
+	for t in pairs(CE.tags) do ceRemove(t) end
+end
+
+local function ceStart()
+	if CE.running then return end
+	CE.running = true
+	CE.scanId += 1
+	local id = CE.scanId
+	task.spawn(function()
+		local n = 0
+		for _, d in ipairs(workspace:GetDescendants()) do
+			if not CE.running or CE.scanId ~= id then return end
+			local t = ceTarget(d)
+			if t then ceAdd(t) end
+			n += 1
+			if n % 400 == 0 then task.wait() end
+		end
+	end)
+	CE.conns[1] = workspace.DescendantAdded:Connect(function(d)
+		task.defer(function()
+			if not CE.running then return end
+			local t = ceTarget(d)
+			if t and t.Parent then ceAdd(t) end
+		end)
+	end)
+	CE.conns[2] = workspace.DescendantRemoving:Connect(function(d)
+		if CE.tags[d] then ceRemove(d) end
+	end)
+end
+
+bind(RunService.Heartbeat, function(dt)
+	if not CE.running then return end
+	CE.acc += dt
+	if CE.acc < 0.15 then return end
+	CE.acc = 0
+	local root = getRoot()
+	for inst, e in pairs(CE.tags) do
+		if not (inst.Parent and e.adornee.Parent) then
+			ceRemove(inst)
+		elseif root then
+			local d = math.floor((e.adornee.Position - root.Position).Magnitude)
+			e.label.Text = inst.Name .. "\n" .. d .. " studs"
+		end
+	end
+end)
+
+offs[#offs + 1] = function()
+	S.CollectESP = false
+	ceStop()
+end
+
 -- navigation & pages ---------------------------------------------------
 local gGeneral = addGroup("General", "=")
 local gAdmin = addGroup("Admin", "+", true)
@@ -702,7 +842,7 @@ local startT = os.clock()
 local function updateStats()
 	stPlayers.Text = string.format('%d <font size="11" color="%s">/ %d</font>', #Players:GetPlayers(), hex(COL.muted), Players.MaxPlayers)
 	local n = 0
-	for _, k in ipairs({ "Speed", "Jump", "InfJump", "Fly", "Noclip", "Fullbright" }) do
+	for _, k in ipairs({ "Speed", "Jump", "InfJump", "Fly", "Noclip", "Fullbright", "CollectESP" }) do
 		if S[k] then n += 1 end
 	end
 	local staff = 0
@@ -737,6 +877,7 @@ addToggle(pgCmds, "Fly", "Fly")
 addToggle(pgCmds, "Noclip", "Noclip")
 addToggle(pgCmds, "Infinite Jump", "InfJump")
 addToggle(pgCmds, "Fullbright", "Fullbright", function() applyFullbright() end)
+addToggle(pgCmds, "Collectible ESP", "CollectESP", function(on) if on then ceStart() else ceStop() end end)
 addButton(pgCmds, "Reset Character", function()
 	local hum = getHum()
 	if hum then hum.Health = 0 end
