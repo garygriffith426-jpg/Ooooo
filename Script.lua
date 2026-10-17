@@ -270,7 +270,7 @@ mk("Frame", { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -1), B
 local logo = mk("Frame", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 16, 0.5, -12), BackgroundColor3 = COL.accent, BorderSizePixel = 0 }, top)
 corner(logo, 7)
 txt(logo, "S", 13, COL.text, Enum.Font.GothamBold, CENTER, { Size = UDim2.fromScale(1, 1) })
-txt(top, "THE SILENT HOUR", 15, COL.text, Enum.Font.GothamBold, nil, { Position = UDim2.fromOffset(50, 0), Size = UDim2.new(0.5, 0, 1, 0) })
+txt(top, "SIERRA", 15, COL.text, Enum.Font.GothamBold, nil, { Position = UDim2.fromOffset(50, 0), Size = UDim2.new(0.5, 0, 1, 0) })
 
 local function topBtn(text, xOff)
 	local b = mk("TextButton", {
@@ -326,7 +326,7 @@ do
 end
 
 -- sidebar
-local side = mk("Frame", { Size = UDim2.new(0, 150, 1, -44), Position = UDim2.fromOffset(0, 44), BackgroundTransparency = 1 }, main)
+local side = mk("Frame", { Size = UDim2.new(0, 130, 1, -44), Position = UDim2.fromOffset(0, 44), BackgroundTransparency = 1 }, main)
 mk("Frame", { Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BackgroundColor3 = COL.line, BorderSizePixel = 0 }, side)
 local sideList = mk("ScrollingFrame", {
 	Size = UDim2.new(1, -1, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0,
@@ -336,9 +336,9 @@ mk("UIPadding", { PaddingTop = UDim.new(0, 12), PaddingLeft = UDim.new(0, 12), P
 vlist(sideList, 6)
 
 -- content area
-local content = mk("Frame", { Size = UDim2.new(1, -150, 1, -44), Position = UDim2.fromOffset(150, 44), BackgroundTransparency = 1 }, main)
+local content = mk("Frame", { Size = UDim2.new(1, -130, 1, -44), Position = UDim2.fromOffset(130, 44), BackgroundTransparency = 1 }, main)
 local crumb = txt(content, "", 12, COL.muted, nil, nil, { Position = UDim2.fromOffset(16, 8), Size = UDim2.new(0.7, 0, 0, 20) })
-txt(content, "v3", 12, COL.muted, nil, Enum.TextXAlignment.Right, { Position = UDim2.new(1, -86, 0, 8), Size = UDim2.fromOffset(70, 20) })
+txt(content, "1.0.0", 12, COL.muted, nil, Enum.TextXAlignment.Right, { Position = UDim2.new(1, -86, 0, 8), Size = UDim2.fromOffset(70, 20) })
 
 local pages, navs, crumbs = {}, {}, {}
 
@@ -353,11 +353,11 @@ local function showPage(name)
 	end
 	local c = crumbs[name]
 	if c then
-		crumb.Text = string.format('<font color="%s">%s</font>  >  <font color="%s">%s</font>', hex(COL.muted), c[1], hex(COL.accent), c[2])
+		crumb.Text = string.format('<font color="%s">%s</font>  →  <font color="%s">%s</font>', hex(COL.muted), c[1], hex(COL.accent), c[2])
 	end
 end
 
-local function addGroup(name, glyph)
+local function addGroup(name, glyph, collapsed)
 	local g = mk("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = AX, BackgroundTransparency = 1 }, sideList)
 	vlist(g, 4)
 	local head = mk("TextButton", { Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, Text = "", AutoButtonColor = false }, g)
@@ -366,15 +366,17 @@ local function addGroup(name, glyph)
 	stroke(box)
 	txt(box, glyph, 12, COL.muted, Enum.Font.GothamBold, CENTER, { Size = UDim2.fromScale(1, 1) })
 	txt(head, name, 13, COL.muted, Enum.Font.GothamMedium, nil, { Position = UDim2.fromOffset(34, 0), Size = UDim2.new(1, -56, 1, 0) })
-	local chev = txt(head, "v", 11, COL.muted, Enum.Font.GothamBold, Enum.TextXAlignment.Right, { Position = UDim2.new(1, -16, 0, 0), Size = UDim2.fromOffset(16, 34) })
+	local chev = txt(head, "^", 11, COL.muted, Enum.Font.GothamBold, Enum.TextXAlignment.Right, { Position = UDim2.new(1, -16, 0, 0), Size = UDim2.fromOffset(16, 34) })
 	local items = mk("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = AX, BackgroundTransparency = 1 }, g)
 	vlist(items, 4)
 	mk("UIPadding", { PaddingLeft = UDim.new(0, 22) }, items)
-	local open = true
+	local open = not collapsed
+	items.Visible = open
+	chev.Text = open and "^" or "v"
 	bind(head.MouseButton1Click, function()
 		open = not open
 		items.Visible = open
-		chev.Text = open and "v" or ">"
+		chev.Text = open and "^" or "v"
 	end)
 	return items
 end
@@ -520,7 +522,8 @@ local function buildTable(parent, maxRows)
 		return c
 	end
 	local chipAll = chip("All Players")
-	local chipTeam = chip("Teammates")
+	local chipStaff = chip("Staff Members")
+	local chipNon = chip("Non Staff")
 
 	local search = mk("TextBox", {
 		Size = UDim2.fromOffset(130, 24), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 11),
@@ -549,7 +552,7 @@ local function buildTable(parent, maxRows)
 			Size = UDim2.fromOffset(28, 28), Position = UDim2.new(0, 14, 0.5, -14),
 			BackgroundColor3 = COL.row, Image = thumbs[p.UserId] or "",
 		}, r)
-		corner(av, 14)
+		corner(av, 8)
 		if not thumbs[p.UserId] then
 			task.spawn(function()
 				local ok, img = pcall(function()
@@ -565,11 +568,11 @@ local function buildTable(parent, maxRows)
 		txt(r, "@" .. p.Name, 10, COL.muted, nil, nil, { Position = UDim2.fromOffset(50, 22), Size = UDim2.new(0.38, -50, 0, 14) })
 		txt(r, tostring(p.UserId), 11, COL.muted, nil, nil, { Position = UDim2.fromScale(0.42, 0), Size = UDim2.new(0.18, 0, 1, 0) })
 		txt(r, p.AccountAge .. " days", 11, COL.muted, nil, nil, { Position = UDim2.fromScale(0.60, 0), Size = UDim2.new(0.17, 0, 1, 0) })
-		txt(r, p == lp and "You" or (p.Team and p.Team.Name or "Player"), 11, COL.muted, nil, nil, { Position = UDim2.fromScale(0.77, 0), Size = UDim2.new(0.12, 0, 1, 0) })
+		txt(r, p.Team and p.Team.Name or "Guest", 11, COL.muted, nil, nil, { Position = UDim2.fromScale(0.77, 0), Size = UDim2.new(0.12, 0, 1, 0) })
 		if p ~= lp then
 			local b = mk("TextButton", {
 				Size = UDim2.fromOffset(66, 22), AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0),
-				BackgroundColor3 = COL.accentDim, Text = "Teleport", TextColor3 = COL.accent,
+				BackgroundColor3 = COL.accentDim, Text = "Manage", TextColor3 = COL.accent,
 				Font = Enum.Font.Gotham, TextSize = 11,
 			}, r)
 			corner(b, 6)
@@ -587,20 +590,22 @@ local function buildTable(parent, maxRows)
 			if c:IsA("Frame") then c:Destroy() end
 		end
 		local list = Players:GetPlayers()
-		local teamCount = 0
+		local staffCount = 0
 		for _, p in ipairs(list) do
-			if lp.Team and p.Team == lp.Team then teamCount += 1 end
+			if lp.Team and p.Team == lp.Team then staffCount += 1 end
 		end
 		chipAll.Text = "All Players (" .. #list .. ")"
-		chipTeam.Text = "Teammates (" .. teamCount .. ")"
-		chipAll.TextColor3 = (filter == "all") and COL.accent or COL.muted
-		chipAll.BackgroundColor3 = (filter == "all") and COL.accentDim or COL.row
-		chipTeam.TextColor3 = (filter == "team") and COL.accent or COL.muted
-		chipTeam.BackgroundColor3 = (filter == "team") and COL.accentDim or COL.row
+		chipStaff.Text = "Staff Members (" .. staffCount .. ")"
+		chipNon.Text = "Non Staff (" .. (#list - staffCount) .. ")"
+		for chipObj, key in pairs({ [chipAll] = "all", [chipStaff] = "staff", [chipNon] = "non" }) do
+			chipObj.TextColor3 = (filter == key) and COL.accent or COL.muted
+			chipObj.BackgroundColor3 = (filter == key) and COL.accentDim or COL.row
+		end
 		local q = query:lower()
 		local shown = 0
 		for _, p in ipairs(list) do
-			local pass = (filter == "all") or (lp.Team ~= nil and p.Team == lp.Team)
+			local isStaff = lp.Team ~= nil and p.Team == lp.Team
+			local pass = (filter == "all") or (filter == "staff" and isStaff) or (filter == "non" and not isStaff)
 			if pass and (q == "" or p.Name:lower():find(q, 1, true) or p.DisplayName:lower():find(q, 1, true)) then
 				if not maxRows or shown < maxRows then
 					shown += 1
@@ -611,7 +616,8 @@ local function buildTable(parent, maxRows)
 	end
 
 	bind(chipAll.MouseButton1Click, function() filter = "all"; refresh() end)
-	bind(chipTeam.MouseButton1Click, function() filter = "team"; refresh() end)
+	bind(chipStaff.MouseButton1Click, function() filter = "staff"; refresh() end)
+	bind(chipNon.MouseButton1Click, function() filter = "non"; refresh() end)
 	bind(search:GetPropertyChangedSignal("Text"), function() query = search.Text; refresh() end)
 	tables[#tables + 1] = refresh
 	refresh()
@@ -622,21 +628,21 @@ bind(Players.PlayerRemoving, function() task.wait(0.2) for _, r in ipairs(tables
 
 -- navigation & pages ---------------------------------------------------
 local gGeneral = addGroup("General", "=")
-local gFeatures = addGroup("Features", "+")
-local gSettings = addGroup("Settings", "*")
+local gAdmin = addGroup("Admin", "+", true)
+local gSettings = addGroup("Settings", "*", true)
 
 local pgDash = addPage("General", "Dashboard")
+local pgCmds = addPage("General", "Commands")
 local pgPlayers = addPage("General", "Players")
-local pgPlayer = addPage("Features", "Player")
-local pgMove = addPage("Features", "Movement")
-local pgWorld = addPage("Features", "World")
+local pgServer = addPage("General", "Server")
+local pgTune = addPage("Admin", "Tuning")
 local pgConfig = addPage("Settings", "Config")
 
 addNav(gGeneral, "Dashboard", "#")
+addNav(gGeneral, "Commands", ">_")
 addNav(gGeneral, "Players", "@")
-addNav(gFeatures, "Player", "+")
-addNav(gFeatures, "Movement", ">")
-addNav(gFeatures, "World", "*")
+addNav(gGeneral, "Server", "~")
+addNav(gAdmin, "Tuning", "+")
 addNav(gSettings, "Config", "=")
 
 bind(searchBtn.MouseButton1Click, function() showPage("Players") end)
@@ -656,17 +662,24 @@ mk("UIGradient", {
 txt(banner, greet .. ", <b>" .. lp.DisplayName .. "</b>.", 19, COL.text, Enum.Font.Gotham, nil, {
 	Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -32, 1, -30), TextYAlignment = Enum.TextYAlignment.Bottom,
 })
-txt(banner, "Mini Admin", 12, COL.text, nil, nil, { Position = UDim2.new(0, 16, 1, -28), Size = UDim2.new(1, -32, 0, 18), TextTransparency = 0.15 })
+txt(banner, "Administrator", 12, COL.text, nil, nil, { Position = UDim2.new(0, 16, 1, -28), Size = UDim2.new(1, -32, 0, 18), TextTransparency = 0.15 })
 
 local actCard = mk("Frame", { Size = UDim2.new(0.36, 0, 1, 0), Position = UDim2.fromScale(0.64, 0), BackgroundColor3 = COL.panel, BorderSizePixel = 0 }, topRow)
 corner(actCard, 12)
 stroke(actCard)
-txt(actCard, "Active Features", 12, COL.muted, nil, nil, { Position = UDim2.fromOffset(14, 10), Size = UDim2.new(1, -28, 0, 16) })
+txt(actCard, "Action Required", 12, COL.muted, nil, nil, { Position = UDim2.fromOffset(14, 10), Size = UDim2.new(1, -28, 0, 16) })
 local actNum = txt(actCard, "0 on", 22, COL.text, Enum.Font.GothamMedium, nil, { Position = UDim2.fromOffset(14, 28), Size = UDim2.new(1, -28, 0, 28) })
 txt(actCard, "currently enabled", 12, COL.muted, nil, nil, { Position = UDim2.fromOffset(14, 56), Size = UDim2.new(1, -28, 0, 16) })
-local reviewBtn = txt(actCard, "Review >", 12, COL.accent, Enum.Font.GothamMedium, nil, { Position = UDim2.fromOffset(14, 78), Size = UDim2.fromOffset(80, 18) })
+local art = mk("Frame", { Size = UDim2.fromOffset(46, 36), Position = UDim2.new(1, -40, 0, 22), BackgroundTransparency = 1 }, actCard)
+corner(art, 6)
+mk("UIStroke", { Color = COL.accentDim, Thickness = 3 }, art)
+local artDot = mk("Frame", { Size = UDim2.fromOffset(12, 12), Position = UDim2.new(1, -52, 0, 16), BackgroundColor3 = COL.accentDim }, actCard)
+corner(artDot, 6)
+local notifDot = mk("Frame", { Size = UDim2.fromOffset(6, 6), Position = UDim2.fromOffset(78, 31), BackgroundColor3 = Color3.fromRGB(255, 70, 80), Visible = false }, actCard)
+corner(notifDot, 3)
+local reviewBtn = txt(actCard, "Review →", 12, COL.accent, Enum.Font.GothamMedium, nil, { Position = UDim2.fromOffset(14, 78), Size = UDim2.fromOffset(80, 18) })
 local reviewHit = mk("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "" }, reviewBtn)
-bind(reviewHit.MouseButton1Click, function() showPage("Player") end)
+bind(reviewHit.MouseButton1Click, function() showPage("Commands") end)
 
 local statRow = mk("Frame", { Size = UDim2.new(1, 0, 0, 60), BackgroundTransparency = 1 }, pgDash)
 local function statCard(idx, glyph, label)
@@ -680,8 +693,8 @@ local function statCard(idx, glyph, label)
 	return txt(c, "", 17, COL.text, Enum.Font.GothamBold, nil, { Position = UDim2.fromOffset(56, 24), Size = UDim2.new(1, -60, 0, 24) })
 end
 local stPlayers = statCard(1, "P", "Players Ingame")
-local stFeatures = statCard(2, "F", "Features Active")
-local stUptime = statCard(3, "T", "Session Uptime")
+local stFeatures = statCard(2, "F", "Staff Ingame")
+local stUptime = statCard(3, "T", "Server Uptime")
 
 buildTable(pgDash, 4)
 
@@ -692,9 +705,14 @@ local function updateStats()
 	for _, k in ipairs({ "Speed", "Jump", "InfJump", "Fly", "Noclip", "Fullbright" }) do
 		if S[k] then n += 1 end
 	end
-	stFeatures.Text = tostring(n)
+	local staff = 0
+	for _, p in ipairs(Players:GetPlayers()) do
+		if lp.Team and p.Team == lp.Team then staff += 1 end
+	end
+	stFeatures.Text = tostring(staff)
 	actNum.Text = n .. " on"
-	local sec = os.clock() - startT
+	notifDot.Visible = n > 0
+	local sec = workspace.DistributedGameTime
 	stUptime.Text = string.format("%dh, %dm", math.floor(sec / 3600), math.floor(sec % 3600 / 60))
 end
 updateStats()
@@ -712,28 +730,53 @@ end
 -- Players page
 buildTable(pgPlayers)
 
--- Player
-addToggle(pgPlayer, "Walk Speed", "Speed", function() applySpeedJump() end)
-addSlider(pgPlayer, "Speed Value", "SpeedVal", 16, 150, function() if S.Speed then applySpeedJump() end end)
-addToggle(pgPlayer, "Jump Power", "Jump", function() applySpeedJump() end)
-addSlider(pgPlayer, "Jump Value", "JumpVal", 50, 250, function() if S.Jump then applySpeedJump() end end)
-addButton(pgPlayer, "Reset Character", function()
+-- Commands
+addToggle(pgCmds, "Walk Speed", "Speed", function() applySpeedJump() end)
+addToggle(pgCmds, "Jump Power", "Jump", function() applySpeedJump() end)
+addToggle(pgCmds, "Fly", "Fly")
+addToggle(pgCmds, "Noclip", "Noclip")
+addToggle(pgCmds, "Infinite Jump", "InfJump")
+addToggle(pgCmds, "Fullbright", "Fullbright", function() applyFullbright() end)
+addButton(pgCmds, "Reset Character", function()
 	local hum = getHum()
 	if hum then hum.Health = 0 end
 end)
 
--- Movement
-addToggle(pgMove, "Fly", "Fly")
-addSlider(pgMove, "Fly Speed", "FlySpeed", 20, 200)
-addToggle(pgMove, "Noclip", "Noclip")
-addToggle(pgMove, "Infinite Jump", "InfJump")
+-- Server
+local function infoRow(page, label, value)
+	local r = newRow(page, 38)
+	txt(r, label, 12, COL.muted, nil, nil, { Position = UDim2.fromOffset(14, 0), Size = UDim2.new(0.4, 0, 1, 0) })
+	txt(r, value, 12, COL.text, Enum.Font.GothamMedium, Enum.TextXAlignment.Right, { Position = UDim2.fromScale(0.4, 0), Size = UDim2.new(0.6, -14, 1, 0) })
+end
+infoRow(pgServer, "Place ID", tostring(game.PlaceId))
+infoRow(pgServer, "Job ID", game.JobId ~= "" and game.JobId or "Studio")
+infoRow(pgServer, "Max Players", tostring(Players.MaxPlayers))
 
--- World
-addToggle(pgWorld, "Fullbright", "Fullbright", function() applyFullbright() end)
+-- Tuning
+addSlider(pgTune, "Speed Value", "SpeedVal", 16, 150, function() if S.Speed then applySpeedJump() end end)
+addSlider(pgTune, "Jump Value", "JumpVal", 50, 250, function() if S.Jump then applySpeedJump() end end)
+addSlider(pgTune, "Fly Speed", "FlySpeed", 20, 200)
 
 -- Config
 addButton(pgConfig, "Save Config", function() saveConfig() end)
 addButton(pgConfig, "Unload Script", cleanup)
+
+-- font (Inter, like the reference)
+do
+	local weights = {
+		[Enum.Font.GothamBold] = Enum.FontWeight.Bold,
+		[Enum.Font.GothamMedium] = Enum.FontWeight.Medium,
+	}
+	local function applyFont(o)
+		if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
+			pcall(function()
+				o.FontFace = Font.new("rbxasset://fonts/families/Inter.json", weights[o.Font] or Enum.FontWeight.Regular)
+			end)
+		end
+	end
+	for _, o in ipairs(gui:GetDescendants()) do applyFont(o) end
+	bind(gui.DescendantAdded, applyFont)
+end
 
 showPage("Dashboard")
 applySpeedJump()
