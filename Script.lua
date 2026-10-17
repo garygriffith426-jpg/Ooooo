@@ -632,7 +632,7 @@ local CE = {
 	running = false, count = 0, scanId = 0, acc = 0, tags = {}, conns = {},
 	keys = {
 		"pumpkin", "candy", "coin", "orb", "gem", "egg", "collect", "pickup", "token",
-		"crystal", "treasure", "loot", "present", "gift", "fruit", "berry", "mushroom", "shard",
+		"crystal", "halloween", "treasure", "loot", "present", "gift", "fruit", "berry", "mushroom", "shard",
 	},
 	verbs = { "collect", "pick", "grab", "take", "loot" },
 }
@@ -663,8 +663,11 @@ local function ceTarget(inst)
 		end
 		return nil
 	end
-	if (inst:IsA("BasePart") or inst:IsA("Model")) and ceMatch(inst.Name, CE.keys) then
-		return inst
+	if inst:IsA("BasePart") or inst:IsA("Model") then
+		if ceMatch(inst.Name, CE.keys) then return inst end
+		-- items named by number/id inside a folder like "Halloween2026Pumpkins"
+		local par = inst.Parent
+		if par and par:IsA("Folder") and ceMatch(par.Name, CE.keys) then return inst end
 	end
 	return nil
 end
